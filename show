@@ -1,0 +1,732 @@
+{% disable_client_cache %}
+ 
+<div class="applications applications-form">
+  <div class="application-list">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        {% capture state_label %}
+        {% case application.state %}
+        {% when 'pending' %} label-default
+        {% when 'live' %} label-success
+        {% when 'suspended' %} label-warning
+        {% endcase %}
+        {% endcapture %}
+ 
+        <a href="{{ urls.applications }}">
+          <i class="fa fa-chevron-left"></i>
+          Applications
+        </a>
+ 
+        {% if application.can.be_updated? %}
+        <a href="{{ application.edit_url }}" class="pull-right">
+          <i class="fa fa-pencil"></i>
+          Edit {{ application.name }}
+        </a>
+        {% endif %}
+      </div>
+      <div class="app-detail-container">
+        <div class="panel-body body-footer section">
+          <dl class="dl-horizontal">
+            <dt>Name</dt>
+            <dd>{{ application.name }}</dd>
+            <dt>Description</dt>
+            <dd>{{ application.description }}</dd>
+            <dt> Plan </dt>
+            <dd>
+              <strong>{{application.plan.name}}</strong>
+              {% if application.can_change_plan? %}
+              <span>&#8250; </span>
+              <!--<a href="#choose-plan-{{ application.id }}" id="choose-plan-{{application.id}}">
+                Review/Change
+              </a>-->
+              <!--{% plan_widget application, wizard: true %}-->
+              <a type="button" id="btnChangePlan" onclick="openModalChangePlan()" >
+                Change plan
+              </a>
+              {{ '/css/plans_widget_overrides.css' | stylesheet_link_tag }}
+              {{ '/css/cards_plans_widget.css' | stylesheet_link_tag }}
+              {% endif %}
+            </dd>
+            <script type="text/javascript">
+              
+              const button = document.getElementById('change-plan-217');
+              if (button != null) {
+                button.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert("Click evento");
+              });
+              }
+            </script>
+          </dl>
+          <hr />
+          <dl class="dl-horizontal">
+            <dt>Status</dt>
+            <dd><span class="label {{ state_label | strip_newlines }}">&nbsp;</span> {{ application.state | capitalize}}
+              {% if application.pending? %}
+              <p class="alert alert-warning">Your application is awaiting approval. This can take a little time - you
+                will be notified by email.</p>
+              {% endif %}
+            </dd>
+            {% if application.buyer_alerts_enabled? %}
+            <dd>
+              <a href="{{ application.alerts_url }}" class="action">{{ application.alerts.size }} usage alert(s)</a>
+            </dd>
+            {% endif %}
+          </dl>
+          <hr />
+          <dl class="dl-horizontal">
+            {% if application.user_key_mode? %}
+            <dt>User Key</dt>
+            <dd><code id="user-key">{{ application.user_key }}</code>
+              <p class="help-block"> Add this as a <code>user_key</code>
+                parameter to your API calls to report and
+                authenticate.</p>
+              {% if application.can.regenerate_user_key? %}
+              {{ 'Regenerate' | update_button: application.update_user_key_url, class: 'btn btn-danger btn-xs' }}
+              {% endif %}
+            </dd>
+            {% elsif application.oauth_mode? %}
+            <div class='data-container' data-backend="oauth">
+              <dt>Client ID</dt>
+              <dd class="key">
+                <code>{{ application.application_id }}</code>
+                <p class='sub'>This is the Client ID you should send with each API request.</p>
+              </dd>
+            </div>
+            <div class="data-container" id="application_keys">
+              <dt>Client Secret</dt>
+              <dd class="key">
+                <code>{{ application.keys.first }}</code>
+                <p class='sub'>This the Client Secret used to authenticate requests.</p>
+                <p>
+                  {% if application.keys.size == 0 %}
+                  {{ 'Create secret' | create_button: application.oauth.create_secret_url }}
+                  {% elsif application.can.regenerate_oauth_secret? %}
+                  {{ 'Regenerate' | regenerate_oauth_secret_button: application.oauth.regenerate_secret_url }}
+                  {% endif %}
+                </p>
+              </dd>
+            </div>
+            <div class='data-container' id="redirect_url">
+              <dt>Redirect URL</dt>
+              <dd class="key">
+                <p class='sub'>This is your Redirect URL for OAuth.</p>
+                {% form 'application.updateremote', application %}
+                <fieldset class="inputs">
+                  <label for="application_redirect_url">Redirect URL</label>
+                  <input type="text" id="application_redirect_url" name="application[redirect_url]"
+                    value="{{ application.redirect_url }}"
+                    class="{{ application.errors.redirect_url | error_class }}" />
+                  {{ application.errors.redirect_url | inline_errors }}
+                </fieldset>
+ 
+                <fieldset class="buttons">
+                  <input class="btn btn-success" name="commit" type="submit" value="Submit">
+                </fieldset>
+                {% endform %}
+              </dd>
+            </div>
+            {% else %}
+            <div class='data-container' data-backend="app_id">
+              <dt>Application ID</dt>
+              <dd class="key">
+                <code>{{ application.application_id }}</code>
+                <p class='sub'>This is the application ID, you should send with each API request.</p>
+              </dd>
+            </div>
+ 
+            {% if application.can.manage_keys? %}
+            <dt>Application Keys</dt>
+            <dd>
+              <div class='data-container' id="application_keys">
+                <table class="table" id="keys">
+                  {% for key in application.application_keys %}
+                  <tr id="application_key_{{key.value}}" data-key="{{key.value}}">
+                    <td class="key"><code>{{ key.value }}</code></td>
+                    <td class="delete_key">
+                      {% if application.can.delete_key? %}
+                      {{ 'Delete' | delete_button_ajax: key.url, class: 'btn btn-danger btn-xs' }}
+                      {% else %}
+                      &mdash;
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </table>
+                <p class='sub'>These are application keys used to authenticate requests.</p>
+                <div class="operations">
+                  {% if application.can.add_application_keys? %}
+                  <div class="enabled_block">
+                    {{ 'Create new key' | create_button_ajax: application.application_keys_url, class: 'btn btn-success
+                    btn-xs' }}
+                  </div>
+                  {% else %}
+                  <div class="disabled_block">
+                    <p class="mini_info">At most {{ application.keys_limit }} keys are allowed.</p>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </dd>
+            {% endif %} <!-- /if application can manage keys? -->
+            {% endif %}
+ 
+            {% for field in application.extra_fields %}
+            {% if field.value != "" %}
+            {% if field.visible? %}
+            <dt>{{ field.label }}</dt>
+            <dd>{{ field.value }}</dd>
+            {% endif %}
+            {% endif %}
+            {% endfor %}
+          </dl>
+ 
+          {% if application.service.referrer_filters_required? %}
+          <dl class="dl-horizontal" id="referrer_filters">
+            <dt>Referrer Filters</dt>
+            <dd>If you are developing a server based application you typically need to add IP addresses, if it is widget
+              based you typically need to add domain names. Specify allowed referrer domains or IP addresses. Wildcards
+              (*.example.org) are also accepted.</dd>
+            <dd>
+              <div class="enabled_block">
+                {% form 'referrer_filter.createremote', referrer_filter %}
+                <input type="text" id="referrer_filter" name="referrer_filter" />
+                <input type="submit" value="Add" name="commit" />
+                {% endform %}
+              </div>
+              <div class="disabled_block">At most {{ application.filters_limit }} referrer filters are allowed.</div>
+            </dd>
+            <dd>
+              <table class="table">
+                {% for filter in application.referrer_filters %}
+                <tr class="{% cycle 'applications': 'odd', 'even' %}" id="referrer_filter_{{ filter.id }}">
+                  <td>{{ filter.value }}</td>
+                  <td>{{ "Delete" | delete_button_ajax: filter.delete_url }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+            </dd>
+          </dl>
+          {% if application.can.add_referrer_filters? %}
+          <script type="text/javascript">
+            $(function () {
+              $("div#referrer_filters").enableSwitch();
+            });
+          </script>
+          {% else %}
+          <script type="text/javascript">
+            $(function () {
+              $("div#referrer_filters").disableSwitch();
+            });
+          </script>
+          {% endif %}
+          {% endif %}
+        </div>
+        <div class="divider"></div>
+        <div class="section quick-start-content">
+          {% unless provider.api_specs == empty %}
+          {% assign api = application.service %}
+          {% assign spec_url = "SPEC_URL" %}
+          {% for spec in provider.api_specs %}
+          {% if spec.service.system_name == api.system_name %}
+          {% assign spec_url = provider.domain_url | append: '/docs#spec-' | append: forloop.index %}
+          {% endif %}
+          {% endfor %}
+          <h4><i class="fa fa-bolt" aria-hidden="true"></i>&nbsp;Getting Started Guide</h4>
+          <dl>
+            <dt>
+              1. Authentication
+            </dt>
+            <dd>
+              Our API platform requires all requests to be authenticated using an access token generated with your
+              <code>client_id</code> and <code>client_secret</code>. You can find these credentials on your
+              application?s Client ID and Client Secret section.
+            </dd>
+            <dt>
+              Token generation URL
+            </dt>
+            <dd>
+              To generate your token, you need to make a request to the following URL:
+            </dd>
+            <dd>
+              <div class="code-block">
+                <div class="code-block-header">
+                  <button class="copy-button"><i class="fa fa-clipboard" aria-hidden="true"></i>&nbsp;Copy</button>
+                </div>
+                <div class="code-block-body">
+                  <code class="source-code">
+                        <pre>https://ssodev.delcanal.com/realms/b2c/protocol/openid-connect/token</pre>
+                      </code>
+                </div>
+              </div>
+            </dd>
+            <dd>
+              An example request is shown below.
+            </dd>
+            <dd>
+              <div class="code-block">
+                <div class="code-block-header">
+                  <button class="copy-button"><i class="fa fa-clipboard" aria-hidden="true"></i>&nbsp;Copy</button>
+                </div>
+                <div class="code-block-body">
+                  <code class="source-code">
+                        <pre>curl -X POST https://ssodev.delcanal.com/realms/b2c/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id={{ application.application_id }} \
+  -d "client_secret={{ application.keys.first }}</pre>
+                      </code>
+                </div>
+              </div>
+            </dd>
+            <dt>
+              2. Application Testing
+            </dt>
+            <dd>
+              After obtaining your authentication token, you can send requests to the API linked to your application.
+              The following example demonstrates how to test your application.
+              <blockquote class="info">
+                <span style="font-weight: bolder;">Note</span>: To execute the API request correctly, you must replace
+                <ul>
+                  <li>
+                    <code>API_ENDPOINT_URL</code>. API endpoint URL.
+                  </li>
+                  <li>
+                    <code>AUTH_TOKEN</code>. Placeholder with the actual token obtained in the previous step.
+                  </li>
+                  <li>
+                    <code>API_QUERY_PARAMS</code>. API quering params.
+                  </li>
+                </ul>
+              </blockquote>
+            </dd>
+            <dd>
+              <div class="code-block">
+                <div class="code-block-header">
+                  <button class="copy-button"><i class="fa fa-clipboard" aria-hidden="true"></i>&nbsp;Copy</button>
+                </div>
+                <div class="code-block-body">
+                  <code class="source-code">
+                        <pre>
+curl -X POST API_ENDPOINT_URL \
+  -H 'accept: */*' \
+  -H 'Authorization: Bearer AUTH_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "headerRequest": {
+    "channel": "CHNL_1",
+    "compensationIndicator": true,
+    "languageCode": "en",
+    "operationType": "CARGO",
+    "orchestrationStep": "none",
+    "pageNumber": 1,
+    "pageSize": 100,
+    "serviceName": "TEST_SERVICE",
+    "serviceOperation": "TEST_OPERATION",
+    "sourceApplication": "curl",
+    "sourceIPAddress": "1.0.0.1",
+    "transactionDate": "2025-05-06 03:47:00.000000",
+    "transactionId": "8293045",
+    "userCompany": "TEST Corp International",
+    "userGroup": "Test Group",
+    "userId": "{{ application.application_id }}",
+    "userRoles": "developer"
+  },
+  API_QUERY_PARAMS
+}'
+                        </pre>
+                      </code>
+                </div>
+              </div>
+            </dd>
+            <dd>
+              Comnplete API information is available on the <a href="{{ spec_url }}"
+                style="font-weight: bolder;">documentation page</a>.
+            </dd>
+            <dt><img src="/images/postman-logo.png" style="width: 15px; height: auto;">Postman</dt>
+            <dd>
+              {% assign postman_collection_url = "/testing/postman/" | append: application.service.system_name | append:
+              ".postman_collection.json" %}
+              {% assign postman_environment_url = "/testing/postman/acp_api_test_environment.json" %}
+              You can download the
+              <a href="#"
+                onclick="updateAndDownloadJSON('{{ postman_collection_url }}', {api_base_url: '{{ application.service.api_specs.first.api_product_production_public_base_url }}', client_id: '{{ application.application_id }}', client_secret: '{{ application.keys.first }}', token_url: 'https://ssodev.delcanal.com/realms/b2c/protocol/openid-connect/token'})">
+                <span style="white-space: nowrap;">
+                  <img src="/images/postman-logo.png" style="width: 15px; height: auto;">Postman
+                </span> collection <i class='fa fa-download' aria-hidden='true'></i>
+              </a> to test your application. This collection is already configured with your <span
+                style="font-weight: bolder;">Client ID</span> and <span style="font-weight: bolder;">Client
+                Secret</span> for your application.
+              &nbsp;
+              <blockquote class="info">
+                <span style="font-weight: bolder;">Note</span>: The Client ID and Client Secret variables are different
+                for each ACP Application.
+              </blockquote>
+              <blockquote class="info">
+                    <span style="font-weight: bolder;">Note</span>: To avoid any issues, remember to use an empty workspace when loading the ACP Postman collections.
+                  </blockquote>
+              <blockquote class="warning">
+                <span style="font-weight: bolder;">Important</span>: Requests to your application (authenticated with
+                your client credentials) will consume quota from your API plan.
+              </blockquote>
+            </dd>
+          </dl>
+          {% endunless %}
+        </div>
+      </div>
+    </div>
+    <!-- Begin Modal Cambio Plan -->
+    <div id="modalChangePlan" class="custom-modal-overlay">
+      <div class="custom-modal-box">
+ 
+        <fieldset style="padding-bottom: 0px !important; padding-top: 0px !important;">
+          <legend>Cambio Plan</legend>
+        </fieldset>
+ 
+        <fieldset style="padding-bottom: 0px !important;">
+          <div class="plan-preview-content" >
+          <div class="list-group plans-content" >
+            {% for plan in application.service.application_plans %}
+            <div class="list-group-item clearfix plan-preview">
+              <div class="pull-left">
+                <h4 class="list-group-item-heading" style="margin-top: 0;">
+                  {{ plan.name }}
+                </h4>
+                <p class="list-group-item-text text-muted">
+                  {% if cc > 0 %}
+                  Costo: {{ plan.currency }} {{ plan.cost_per_month }} / mes
+                  {% if plan.setup_fee > 0 %} (+ {{ plan.setup_fee }} instalación){% endif %}
+                  {% else %}
+                  <strong>Gratis</strong>
+                  {% endif %}
+                </p>
+              </div>
+ 
+              <div class="pull-right" style="margin-top: 5px;">
+                {% if plan.id == application.plan.id %}
+                <span class="label label-success" style="padding: 8px; font-size: 12px;">
+                  <i class="fa fa-check"></i> Plan Actual
+                </span>
+                {% else %}
+                <button type="button" class="btn btn-primary btn-sm"
+                  onclick="preselectPlan('{{ plan.id }}', '{{ plan.name }}', '{{ plan.system_name }}')">
+                  Seleccionar
+                </button>
+                {% endif %}
+              </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">No hay otros planes públicos disponibles.</div>
+            {% endfor %}
+          </div>
+          </div>
+        </fieldset>
+ 
+        <div id="confirmationFooter"
+          style="display:none; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; background-color: #f9f9f9; padding: 10px;">
+ 
+          <p style="font-size: 14px; margin-bottom: 10px;">
+            Has seleccionado el plan: <strong id="lblSelectedPlanName"
+              style="color: #0088ce; font-size: 16px;">--</strong>
+          </p>
+ 
+          <div style="text-align: right;">
+            <form id="formConfirmChangePlan" method="POST" action="https://payment-gateway-3scale-apim-paygtw-ns-dev01.apps.arosfeus2dev01.canal.acp/acp/api/v1/application/change-plan-custom">
+              <input type="hidden" id="account-id" name="account-id" value="{{ current_account.id }}">
+              <input type="hidden" id="vault-id" name="vault-id" value="{{ current_user.extra_fields['account-id'] }}">
+              <input type="hidden" id="application-id" name="application-id" value="{{ application.id }}">
+              <input type="hidden" id="plan-id" name="plan-id" >
+              <input type="hidden" id="plan-system-name" name="plan-system-name" >
+              <button type="submit" id="btnConfirmChangePlan" class="btn btn-success">
+                Solicitar Cambio
+                </a>
+            </form>
+          </div>
+        </div>
+ 
+        <div style="margin-top: 15px; text-align: right;">
+          <button id="btnCancelChangePlan" class="btn btn-default">Cancelar</button>
+        </div>
+ 
+      </div>
+    </div>
+    <!-- End Modal Cambio Plan -->
+  </div>
+</div>
+ 
+<style>
+  blockquote.info {
+    padding: 1em 1.5em;
+    margin: 1em 0;
+    border-left: 5px solid #2196f3;
+    background-color: #e3f2fd;
+    color: #0c5460;
+    font-style: normal;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+ 
+  blockquote.warning {
+    padding: 1em 1.5em;
+    margin: 1em 0;
+    border-left: 5px solid #ff9800;
+    background-color: #fff3cd;
+    color: #856404;
+    font-style: normal;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+ 
+  .app-detail-container {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    padding: 15px 0px;
+  }
+ 
+  .section {
+    flex: 1 1 300px;
+    padding: 1em;
+    box-sizing: border-box;
+  }
+ 
+  .divider {
+    width: 1px;
+    background-color: #eee;
+    margin: 0 1em;
+  }
+ 
+  @media (max-width: 768px) {
+    .app-detail-container {
+      flex-direction: column;
+    }
+ 
+    .divider {
+      width: 100%;
+      height: 1px;
+      margin: 1em 0;
+    }
+  }
+ 
+  .code-block {
+    position: relative;
+    background-color: #f9f9f9;
+    overflow: auto;
+    font-family: Consolas, Monaco, 'Courier New', monospace;
+    max-width: 528px;
+  }
+ 
+  .code-block-header {
+    border: 1px solid #ccc;
+    align-content: flex-end;
+    text-align: right;
+    background-color: transparent;
+    border-radius: 6px 6px 0px 0px;
+    padding: 5px;
+  }
+ 
+  .code-block-body {
+    border: 1px solid #ccc;
+    text-align: start;
+    background-color: transparent;
+    border-radius: 0px 0px 6px 6px;
+    padding: 10px;
+    border-top: 0px;
+    overflow-y: hidden;
+    overflow-x: auto;
+  }
+ 
+  .code-block-body code {
+    display: inline-block;
+    padding: 0px;
+    white-space: nowrap;
+  }
+ 
+  .code-block pre {
+    margin: 0;
+    white-space: pre;
+    /* Wrap lines nicely */
+    word-break: normal;
+    overflow-x: auto;
+    overflow-y: hidden;
+    color: #333;
+  }
+ 
+  .copy-button {
+    top: 10px;
+    right: 10px;
+    background: #e0e0e0;
+    border: 1px solid rgb(21, 75, 117);
+    padding: 0.4em 0.6em;
+    font-size: 0.85em;
+    border-radius: 4px;
+    cursor: pointer;
+    color: rgb(21, 75, 117);
+    z-index: 10;
+  }
+ 
+  .copy-button:hover {
+    background: rgb(21, 75, 117);
+    color: #eee;
+  }
+ 
+  @media (min-width: 768px) {
+    /*white-space: unset;*/
+  }
+ 
+  .quick-start-content dt {
+    padding: 1em 0em;
+  }
+  .custom-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+  }
+ 
+  .custom-modal-box {
+    background: #fff;
+    width: 70%;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+ /* 1. Contenedor de la lista: Lo convertimos en Flexbox */
+  .plans-content {
+    display: flex;
+    flex-wrap: wrap; /* Permite que si no caben, bajen a la siguiente linea */
+    gap: 15px;       /* Espacio entre tarjetas */
+    border: none;    /* Quitar bordes por defecto del grupo */
+    padding: 10px;
+  }
+ 
+  /* 2. Cada tarjeta individual (Item) */
+  .list-group-item.plan-preview {
+    flex: 1 1 calc(33.33% - 20px); /* Intenta ocupar 1/3 del ancho (3 columnas) */
+    min-width: 200px; /* Ancho mínimo para que no se aplasten en moviles */
+    display: flex;
+    flex-direction: column; /* Elementos internos uno debajo del otro */
+    justify-content: space-between; /* Espacia el contenido del botón */
+    align-items: center; /* Centra todo horizontalmente */
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px !important; /* Redondear todas las tarjetas */
+    margin-bottom: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Sombra suave opcional */
+  }
+ 
+  /* 3. Anular los 'pull-left' y 'pull-right' de Bootstrap DENTRO de la tarjeta */
+  /* Esto es necesario para que el título quede arriba y el botón abajo */
+  .plan-preview .pull-left,
+  .plan-preview .pull-right {
+    float: none !important;
+    width: 100%;
+    text-align: center;
+  }
+ 
+  /* Ajuste visual para el precio/titulo */
+  .plan-preview .list-group-item-heading {
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #333;
+  }
+  .plan-preview .list-group-item-text {
+    margin-bottom: 15px;
+    min-height: 40px; /* Altura mínima para alinear botones si el texto varía */
+  }
+ 
+  /* Ajuste para el botón */
+  .plan-preview button {
+    width: 100%; /* Botón ancho completo de la tarjeta */
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.copy-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const code = button.parentElement.nextElementSibling.querySelector(".source-code").innerText;
+        navigator.clipboard.writeText(code).then(() => {
+          button.innerHTML = "<i class='fa fa-check' aria-hidden='true'></i>&nbsp;Copied!";
+          setTimeout(() => button.innerHTML = "<i class='fa fa-clipboard' aria-hidden='true'></i>&nbsp;Copy", 1500);
+        });
+      });
+    });
+        
+    const formChangePlan = document.getElementById("formChangePlan");
+    const modalChangePlan = document.getElementById("modalChangePlan");
+    const confirmationFooter = document.getElementById("confirmationFooter");
+ 
+    const formConfirmChangePlan = document.getElementById("formConfirmChangePlan");
+    const btnCancelChangePlan = document.getElementById("btnCancelChangePlan");
+    const btnConfirmChangePlan = document.getElementById("btnConfirmChangePlan");
+ 
+    
+ 
+ 
+    if (!modalChangePlan || !formConfirmChangePlan) return;
+ 
+    /* Description: Close modalChangePlan when cancel */
+    btnCancelChangePlan.addEventListener("click", () => {
+      modalChangePlan.style.display = "none";
+      confirmationFooter.style.display = "none";
+    });
+ 
+    /* Description: Close modalChangePlan when click out modal */
+    modalChangePlan.addEventListener("click", e => {
+      if (e.target === modalChangePlan) {
+        modalChangePlan.style.display = "none";
+        confirmationFooter.style.display = "none";
+      }
+    });
+ 
+    /* Description: Close modalChangePlan when press ESC */
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") {
+        modalChangePlan.style.display = "none";
+        confirmationFooter.style.display = "none";
+      }
+    });
+ 
+ 
+    /* Description: Send request to change plan */
+    formConfirmChangePlan.addEventListener("submit", function (e) {
+      console.log("formConfirmChangePlan");
+      e.preventDefault();
+    });
+ 
+    btnConfirmChangePlan.addEventListener("click", e => {
+      e.preventDefault();
+      // var respuesta = confirm("¿Acepta cambiar el plan?");
+      const vaultValue = document.getElementById("vault-id").value;
+      
+      if(!vaultValue || vaultValue.trim() === ""){
+        alert("Debe configurar una tarjeta de credito.");
+        return;
+      }
+      
+      if (confirm("¿Acepta cambiar el plan?")) {
+        formConfirmChangePlan.submit();
+      }
+      
+    });
+ 
+  });
+  
+  /* Description: Function on click button "Seleccionar" */
+  function preselectPlan(planId, planName, planSystemName) {
+    document.getElementById('confirmationFooter').style.display = 'block';
+    document.getElementById('lblSelectedPlanName').innerText = planName;
+    document.getElementById('plan-id').value = planId;
+    document.getElementById('plan-system-name').value = planSystemName;
+    
+  }
+  
+  /* Description: Open modalChangePlan */
+  function openModalChangePlan() {
+    modalChangePlan.style.display = "block";
+  }
+  
+</script>
+{{ '/javascripts/postman-collection-generator.js' | javascript_include_tag }}
