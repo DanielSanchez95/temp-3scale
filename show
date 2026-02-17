@@ -1,5 +1,5 @@
 {% disable_client_cache %}
- 
+
 <div class="applications applications-form">
   <div class="application-list">
     <div class="panel panel-default">
@@ -11,12 +11,12 @@
         {% when 'suspended' %} label-warning
         {% endcase %}
         {% endcapture %}
- 
+
         <a href="{{ urls.applications }}">
           <i class="fa fa-chevron-left"></i>
           Applications
         </a>
- 
+
         {% if application.can.be_updated? %}
         <a href="{{ application.edit_url }}" class="pull-right">
           <i class="fa fa-pencil"></i>
@@ -36,27 +36,13 @@
               <strong>{{application.plan.name}}</strong>
               {% if application.can_change_plan? %}
               <span>&#8250; </span>
-              <!--<a href="#choose-plan-{{ application.id }}" id="choose-plan-{{application.id}}">
-                Review/Change
-              </a>-->
-              <!--{% plan_widget application, wizard: true %}-->
-              <a type="button" id="btnChangePlan" onclick="openModalChangePlan()" >
+              <a type="button" id="btnChangePlan" onclick="openModalChangePlan()" style="cursor: pointer;">
                 Change plan
               </a>
               {{ '/css/plans_widget_overrides.css' | stylesheet_link_tag }}
               {{ '/css/cards_plans_widget.css' | stylesheet_link_tag }}
               {% endif %}
             </dd>
-            <script type="text/javascript">
-              
-              const button = document.getElementById('change-plan-217');
-              if (button != null) {
-                button.addEventListener('click', function(e) {
-                e.preventDefault();
-                alert("Click evento");
-              });
-              }
-            </script>
           </dl>
           <hr />
           <dl class="dl-horizontal">
@@ -119,7 +105,7 @@
                     class="{{ application.errors.redirect_url | error_class }}" />
                   {{ application.errors.redirect_url | inline_errors }}
                 </fieldset>
- 
+
                 <fieldset class="buttons">
                   <input class="btn btn-success" name="commit" type="submit" value="Submit">
                 </fieldset>
@@ -134,7 +120,7 @@
                 <p class='sub'>This is the application ID, you should send with each API request.</p>
               </dd>
             </div>
- 
+
             {% if application.can.manage_keys? %}
             <dt>Application Keys</dt>
             <dd>
@@ -157,8 +143,7 @@
                 <div class="operations">
                   {% if application.can.add_application_keys? %}
                   <div class="enabled_block">
-                    {{ 'Create new key' | create_button_ajax: application.application_keys_url, class: 'btn btn-success
-                    btn-xs' }}
+                    {{ 'Create new key' | create_button_ajax: application.application_keys_url, class: 'btn btn-success btn-xs' }}
                   </div>
                   {% else %}
                   <div class="disabled_block">
@@ -168,9 +153,8 @@
                 </div>
               </div>
             </dd>
-            {% endif %} <!-- /if application can manage keys? -->
-            {% endif %}
- 
+            {% endif %} {% endif %}
+
             {% for field in application.extra_fields %}
             {% if field.value != "" %}
             {% if field.visible? %}
@@ -180,7 +164,7 @@
             {% endif %}
             {% endfor %}
           </dl>
- 
+
           {% if application.service.referrer_filters_required? %}
           <dl class="dl-horizontal" id="referrer_filters">
             <dt>Referrer Filters</dt>
@@ -340,7 +324,7 @@ curl -X POST API_ENDPOINT_URL \
               </div>
             </dd>
             <dd>
-              Comnplete API information is available on the <a href="{{ spec_url }}"
+              Complete API information is available on the <a href="{{ spec_url }}"
                 style="font-weight: bolder;">documentation page</a>.
             </dd>
             <dt><img src="/images/postman-logo.png" style="width: 15px; height: auto;">Postman</dt>
@@ -375,61 +359,61 @@ curl -X POST API_ENDPOINT_URL \
         </div>
       </div>
     </div>
-    <!-- Begin Modal Cambio Plan -->
+
     <div id="modalChangePlan" class="custom-modal-overlay">
       <div class="custom-modal-box">
- 
-        <fieldset style="padding-bottom: 0px !important; padding-top: 0px !important;">
-          <legend>Cambio Plan</legend>
+
+        <fieldset style="border-bottom: 1px solid #eee; margin-bottom: 10px; padding-bottom: 10px;">
+          <legend style="border:none; margin:0;">Cambio de Plan</legend>
         </fieldset>
- 
-        <fieldset style="padding-bottom: 0px !important;">
-          <div class="plan-preview-content" >
-          <div class="list-group plans-content" >
-            {% for plan in application.service.application_plans %}
-            <div class="list-group-item clearfix plan-preview">
-              <div class="pull-left">
-                <h4 class="list-group-item-heading" style="margin-top: 0;">
-                  {{ plan.name }}
-                </h4>
-                <p class="list-group-item-text text-muted">
-                  {% if cc > 0 %}
-                  Costo: {{ plan.currency }} {{ plan.cost_per_month }} / mes
-                  {% if plan.setup_fee > 0 %} (+ {{ plan.setup_fee }} instalación){% endif %}
+
+        <fieldset>
+          <div class="plan-preview-content">
+            <div class="list-group plans-content">
+              {% for plan in application.service.application_plans %}
+              <div class="list-group-item clearfix plan-preview">
+                <div class="pull-left">
+                  <h4 class="list-group-item-heading">
+                    {{ plan.name }}
+                  </h4>
+                  <p class="list-group-item-text text-muted">
+                    {% if plan.cost_per_month > 0 %}
+                    Costo: {{ plan.currency }} {{ plan.cost_per_month }} / mes
+                    {% if plan.setup_fee > 0 %} (+ {{ plan.setup_fee }} instalación){% endif %}
+                    {% else %}
+                    <strong>Gratis</strong>
+                    {% endif %}
+                  </p>
+                </div>
+
+                <div class="pull-right">
+                  {% if plan.id == application.plan.id %}
+                  <span class="label label-success" style="padding: 8px; font-size: 12px; width: 100%; display:block;">
+                    <i class="fa fa-check"></i> Plan Actual
+                  </span>
                   {% else %}
-                  <strong>Gratis</strong>
+                  <button type="button" class="btn btn-primary btn-sm"
+                    onclick="preselectPlan('{{ plan.id }}', '{{ plan.name }}', '{{ plan.system_name }}')">
+                    Seleccionar
+                  </button>
                   {% endif %}
-                </p>
+                </div>
               </div>
- 
-              <div class="pull-right" style="margin-top: 5px;">
-                {% if plan.id == application.plan.id %}
-                <span class="label label-success" style="padding: 8px; font-size: 12px;">
-                  <i class="fa fa-check"></i> Plan Actual
-                </span>
-                {% else %}
-                <button type="button" class="btn btn-primary btn-sm"
-                  onclick="preselectPlan('{{ plan.id }}', '{{ plan.name }}', '{{ plan.system_name }}')">
-                  Seleccionar
-                </button>
-                {% endif %}
-              </div>
+              {% else %}
+              <div class="alert alert-warning" style="width:100%">No hay otros planes públicos disponibles.</div>
+              {% endfor %}
             </div>
-            {% else %}
-            <div class="alert alert-warning">No hay otros planes públicos disponibles.</div>
-            {% endfor %}
-          </div>
           </div>
         </fieldset>
- 
+
         <div id="confirmationFooter"
-          style="display:none; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; background-color: #f9f9f9; padding: 10px;">
- 
-          <p style="font-size: 14px; margin-bottom: 10px;">
+          style="display:none; margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; background-color: #f9f9f9; padding: 15px; border-radius: 4px;">
+
+          <p style="font-size: 14px; margin-bottom: 15px;">
             Has seleccionado el plan: <strong id="lblSelectedPlanName"
               style="color: #0088ce; font-size: 16px;">--</strong>
           </p>
- 
+
           <div style="text-align: right;">
             <form id="formConfirmChangePlan" method="POST" action="https://payment-gateway-3scale-apim-paygtw-ns-dev01.apps.arosfeus2dev01.canal.acp/acp/api/v1/application/change-plan-custom">
               <input type="hidden" id="account-id" name="account-id" value="{{ current_account.id }}">
@@ -437,24 +421,27 @@ curl -X POST API_ENDPOINT_URL \
               <input type="hidden" id="application-id" name="application-id" value="{{ application.id }}">
               <input type="hidden" id="plan-id" name="plan-id" >
               <input type="hidden" id="plan-system-name" name="plan-system-name" >
+              
               <button type="submit" id="btnConfirmChangePlan" class="btn btn-success">
                 Solicitar Cambio
-                </a>
+              </button>
             </form>
           </div>
         </div>
- 
+
         <div style="margin-top: 15px; text-align: right;">
           <button id="btnCancelChangePlan" class="btn btn-default">Cancelar</button>
         </div>
- 
+
       </div>
     </div>
-    <!-- End Modal Cambio Plan -->
-  </div>
+    </div>
 </div>
- 
+
 <style>
+  /* -------------------------------------- */
+  /* Estilos Generales Base */
+  /* -------------------------------------- */
   blockquote.info {
     padding: 1em 1.5em;
     margin: 1em 0;
@@ -465,7 +452,7 @@ curl -X POST API_ENDPOINT_URL \
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
- 
+
   blockquote.warning {
     padding: 1em 1.5em;
     margin: 1em 0;
@@ -476,38 +463,38 @@ curl -X POST API_ENDPOINT_URL \
     border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
- 
+
   .app-detail-container {
     display: flex;
     align-items: stretch;
     flex-wrap: wrap;
     padding: 15px 0px;
   }
- 
+
   .section {
     flex: 1 1 300px;
     padding: 1em;
     box-sizing: border-box;
   }
- 
+
   .divider {
     width: 1px;
     background-color: #eee;
     margin: 0 1em;
   }
- 
+
   @media (max-width: 768px) {
     .app-detail-container {
       flex-direction: column;
     }
- 
+
     .divider {
       width: 100%;
       height: 1px;
       margin: 1em 0;
     }
   }
- 
+
   .code-block {
     position: relative;
     background-color: #f9f9f9;
@@ -515,7 +502,7 @@ curl -X POST API_ENDPOINT_URL \
     font-family: Consolas, Monaco, 'Courier New', monospace;
     max-width: 528px;
   }
- 
+
   .code-block-header {
     border: 1px solid #ccc;
     align-content: flex-end;
@@ -524,7 +511,7 @@ curl -X POST API_ENDPOINT_URL \
     border-radius: 6px 6px 0px 0px;
     padding: 5px;
   }
- 
+
   .code-block-body {
     border: 1px solid #ccc;
     text-align: start;
@@ -535,23 +522,22 @@ curl -X POST API_ENDPOINT_URL \
     overflow-y: hidden;
     overflow-x: auto;
   }
- 
+
   .code-block-body code {
     display: inline-block;
     padding: 0px;
     white-space: nowrap;
   }
- 
+
   .code-block pre {
     margin: 0;
     white-space: pre;
-    /* Wrap lines nicely */
     word-break: normal;
     overflow-x: auto;
     overflow-y: hidden;
     color: #333;
   }
- 
+
   .copy-button {
     top: 10px;
     right: 10px;
@@ -564,19 +550,19 @@ curl -X POST API_ENDPOINT_URL \
     color: rgb(21, 75, 117);
     z-index: 10;
   }
- 
+
   .copy-button:hover {
     background: rgb(21, 75, 117);
     color: #eee;
   }
- 
-  @media (min-width: 768px) {
-    /*white-space: unset;*/
-  }
- 
+
   .quick-start-content dt {
     padding: 1em 0em;
   }
+
+  /* -------------------------------------- */
+  /* Estilos de la Modal y Fondo */
+  /* -------------------------------------- */
   .custom-modal-overlay {
     display: none;
     position: fixed;
@@ -584,89 +570,97 @@ curl -X POST API_ENDPOINT_URL \
     background: rgba(0, 0, 0, 0.6);
     z-index: 10000;
   }
- 
+
   .custom-modal-box {
     background: #fff;
-    width: 70%;
-    margin: 10% auto;
+    width: 90%;          /* Ancho responsivo */
+    max-width: 900px;    /* Ancho máximo para pantallas grandes */
+    margin: 5% auto;     /* Centrado vertical y horizontal */
     padding: 20px;
     border-radius: 6px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    max-height: 90vh;
+    overflow-y: auto;    /* Scroll vertical para el modal si es muy alto */
   }
-  /* =======================================================
-     1. EL CONTENEDOR (plans-content)
-     Este es el que tendrá la barra de desplazamiento.
-     ======================================================= */
+
+  /* RESET DE FIELDSET: Vital para que el contenido ocupe el 100% */
+  .custom-modal-box fieldset {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    min-width: 0 !important;
+  }
+
+  .plan-preview-content {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* -------------------------------------- */
+  /* CONTENEDOR DE SCROLL HORIZONTAL */
+  /* -------------------------------------- */
   .plans-content {
-    /* Flexbox para alinear horizontalmente */
+    /* Layout */
     display: flex !important;
     flex-direction: row !important;
     
-    /* ESTO ES LO QUE HACE LA MAGIA DEL SCROLL: */
-    flex-wrap: nowrap !important;   /* Prohibido bajar a la siguiente línea */
-    overflow-x: auto !important;    /* Si se salen, mostrar barra de scroll */
-    overflow-y: hidden;             /* Ocultar scroll vertical */
+    /* Configuración del Scroll */
+    flex-wrap: nowrap !important;   /* Prohibido bajar de línea */
+    overflow-x: auto !important;    /* Scroll horizontal activo */
+    overflow-y: hidden;
     
-    /* Espaciado y dimensiones */
-    gap: 15px;                      /* Espacio entre tarjetas */
-    width: 100%;                    /* Ocupar todo el ancho del modal */
-    padding: 5px 5px 20px 5px;      /* Padding abajo para la barra de scroll */
-    border: none;                   /* Quitar bordes por defecto de bootstrap */
-    margin-bottom: 0px;
-
-    /* Suavizado para móviles (iOS) */
+    /* Espaciado */
+    gap: 20px;
+    width: 100% !important;
+    padding: 5px 5px 20px 5px;      /* Padding inferior para la barra de scroll */
+    margin: 0 !important;
+    
+    /* Suavizado */
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 
-  /* =======================================================
-     2. LAS TARJETAS (plan-preview)
-     Deben tener un ancho fijo y NO encogerse.
-     ======================================================= */
+  /* -------------------------------------- */
+  /* TARJETAS INDIVIDUALES (ITEMS) */
+  /* -------------------------------------- */
   .list-group-item.plan-preview {
-    /* flex: 0 0 250px 
-       0 -> flex-grow: No estirarse más de 250px
-       0 -> flex-shrink: NO ENCOGERSE (Vital para que no se aplasten)
-       250px -> flex-basis: El ancho base
-    */
-    flex: 0 0 250px !important;     
-    width: 250px !important;
-    max-width: 250px !important;
+    /* Tamaño Fijo y Rígido */
+    flex: 0 0 260px !important;     /* No crecer, No encoger, Base 260px */
+    width: 260px !important;
+    max-width: 260px !important;
 
-    /* Estilos visuales de la tarjeta */
+    /* Diseño Interno */
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between; /* Título arriba, botón abajo */
+    justify-content: space-between;
     
+    /* Estética */
     margin-bottom: 0 !important;
     background: #fff;
     border: 1px solid #ddd;
     border-radius: 8px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    float: none !important; /* Anular floats de bootstrap */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    float: none !important;
   }
 
-  /* =======================================================
-     3. ESTILOS DE LA BARRA DE SCROLL (Opcional)
-     Para que se vea moderna y no la gris por defecto.
-     ======================================================= */
+  /* Barra de desplazamiento personalizada */
   .plans-content::-webkit-scrollbar {
-    height: 8px;              /* Altura de la barra horizontal */
+    height: 8px;
   }
   .plans-content::-webkit-scrollbar-track {
-    background: #f1f1f1;      /* Color del fondo del riel */
+    background: #f1f1f1;
     border-radius: 4px;
   }
   .plans-content::-webkit-scrollbar-thumb {
-    background: #ccc;         /* Color de la barra */
+    background: #ccc;
     border-radius: 4px;
   }
   .plans-content::-webkit-scrollbar-thumb:hover {
-    background: #999;         /* Color al pasar el mouse */
+    background: #999;
   }
 
-  /* =======================================================
-     4. LIMPIEZA INTERNA (Bootstrap Overrides)
-     ======================================================= */
+  /* Limpieza de clases Bootstrap dentro de las tarjetas */
   .plan-preview .pull-left,
   .plan-preview .pull-right {
     float: none !important;
@@ -677,10 +671,14 @@ curl -X POST API_ENDPOINT_URL \
 
   .plan-preview h4 {
     margin-top: 15px;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 18px;
+    font-weight: bold;
     color: #0088ce;
-    white-space: normal; /* Permitir que el título use 2 líneas si es largo */
+    white-space: normal;
+  }
+
+  .plan-preview p.text-muted {
+    min-height: 40px;
   }
 
   .plan-preview button {
@@ -689,8 +687,10 @@ curl -X POST API_ENDPOINT_URL \
     margin-bottom: 10px;
   }
 </style>
+
 <script>
   document.addEventListener('DOMContentLoaded', () => {
+    // Lógica para botones de copiar código
     document.querySelectorAll('.copy-button').forEach(button => {
       button.addEventListener('click', () => {
         const code = button.parentElement.nextElementSibling.querySelector(".source-code").innerText;
@@ -700,80 +700,78 @@ curl -X POST API_ENDPOINT_URL \
         });
       });
     });
-        
-    const formChangePlan = document.getElementById("formChangePlan");
+       
+    // Variables del Modal
     const modalChangePlan = document.getElementById("modalChangePlan");
     const confirmationFooter = document.getElementById("confirmationFooter");
- 
     const formConfirmChangePlan = document.getElementById("formConfirmChangePlan");
     const btnCancelChangePlan = document.getElementById("btnCancelChangePlan");
     const btnConfirmChangePlan = document.getElementById("btnConfirmChangePlan");
- 
-    
- 
- 
+
     if (!modalChangePlan || !formConfirmChangePlan) return;
- 
-    /* Description: Close modalChangePlan when cancel */
+
+    /* Cerrar modal (Botón Cancelar) */
     btnCancelChangePlan.addEventListener("click", () => {
       modalChangePlan.style.display = "none";
       confirmationFooter.style.display = "none";
     });
- 
-    /* Description: Close modalChangePlan when click out modal */
+
+    /* Cerrar modal (Clic afuera) */
     modalChangePlan.addEventListener("click", e => {
       if (e.target === modalChangePlan) {
         modalChangePlan.style.display = "none";
         confirmationFooter.style.display = "none";
       }
     });
- 
-    /* Description: Close modalChangePlan when press ESC */
+
+    /* Cerrar modal (Tecla ESC) */
     document.addEventListener("keydown", e => {
       if (e.key === "Escape") {
         modalChangePlan.style.display = "none";
         confirmationFooter.style.display = "none";
       }
     });
- 
- 
-    /* Description: Send request to change plan */
-    formConfirmChangePlan.addEventListener("submit", function (e) {
-      console.log("formConfirmChangePlan");
-      e.preventDefault();
-    });
- 
+
+    /* Envío del Formulario (Validación) */
     btnConfirmChangePlan.addEventListener("click", e => {
       e.preventDefault();
-      // var respuesta = confirm("¿Acepta cambiar el plan?");
+      
+      // 1. Validar Vault ID
       const vaultValue = document.getElementById("vault-id").value;
       
       if(!vaultValue || vaultValue.trim() === ""){
-        alert("Debe configurar una tarjeta de credito.");
-        return;
+        alert("Error: No se detectó un ID de tarjeta (Vault ID). Por favor configure su método de pago.");
+        return; // Detiene la ejecución si falla
       }
       
-      if (confirm("¿Acepta cambiar el plan?")) {
+      // 2. Confirmación y Envío
+      if (confirm("¿Está seguro que desea cambiar al plan seleccionado?")) {
+        // Feedback visual
+        btnConfirmChangePlan.innerText = "Procesando...";
+        btnConfirmChangePlan.disabled = true;
+        
+        // Envío nativo del formulario (application/x-www-form-urlencoded)
         formConfirmChangePlan.submit();
       }
-      
     });
- 
   });
   
-  /* Description: Function on click button "Seleccionar" */
+  /* Función externa para abrir la modal */
+  function openModalChangePlan() {
+    document.getElementById("modalChangePlan").style.display = "block";
+  }
+
+  /* Función externa para preseleccionar un plan */
   function preselectPlan(planId, planName, planSystemName) {
     document.getElementById('confirmationFooter').style.display = 'block';
     document.getElementById('lblSelectedPlanName').innerText = planName;
+    
+    // Llenar inputs ocultos
     document.getElementById('plan-id').value = planId;
     document.getElementById('plan-system-name').value = planSystemName;
     
+    // Scroll suave hacia el footer para mostrar que se seleccionó
+    document.getElementById('confirmationFooter').scrollIntoView({ behavior: 'smooth' });
   }
-  
-  /* Description: Open modalChangePlan */
-  function openModalChangePlan() {
-    modalChangePlan.style.display = "block";
-  }
-  
 </script>
 {{ '/javascripts/postman-collection-generator.js' | javascript_include_tag }}
