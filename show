@@ -593,74 +593,77 @@ curl -X POST API_ENDPOINT_URL \
     border-radius: 6px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   }
-  /* 1. EL CONTENEDOR (PADRE) */
-.plans-content {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;   /* <--- CRÍTICO: Prohibido bajar a la siguiente línea */
-  overflow-x: auto !important;    /* <--- CRÍTICO: Habilita el scroll horizontal */
-  overflow-y: hidden;             /* Oculta scroll vertical */
-  gap: 20px;                      /* Espacio entre tarjetas */
-  padding: 10px 5px 20px 5px;     /* Padding extra abajo para la barra de scroll */
+  /* 1. EL CONTENEDOR (PADRE) - Habilita el scroll */
+  .plans-content {
+    display: flex !important;
+    flex-direction: row !important;
+    
+    /* ESTAS DOS LÍNEAS SON LA CLAVE DEL SCROLL: */
+    flex-wrap: nowrap !important;   /* Prohibido bajar de línea. Obliga a una sola fila infinita. */
+    overflow-x: auto !important;    /* Si no caben, muestra barra de scroll horizontal */
+    overflow-y: hidden;             /* Oculta scroll vertical */
+    
+    gap: 20px;                      /* Espacio entre tarjetas */
+    padding: 10px 5px 20px 5px;     /* Padding abajo para que la barra de scroll no tape el contenido */
+    width: 100%;                    /* Asegura que use todo el ancho disponible */
+    
+    /* Suavizado del scroll para móviles/tablets */
+    -webkit-overflow-scrolling: touch; 
+  }
+
+  /* 2. CADA TARJETA (HIJO) - Mantiene su ancho fijo */
+  .list-group-item.plan-preview {
+    
+    /* CRÍTICO: "0 0 280px" significa:
+       - 0: No crecer
+       - 0: NO ENCOGER (Esto evita que se aplasten)
+       - 280px: Ancho base
+    */
+    flex: 0 0 280px !important;     
+    width: 280px !important;        
+    max-width: 280px !important;
+    
+    /* Estilos estéticos de la tarjeta */
+    display: flex !important;
+    flex-direction: column !important; 
+    justify-content: space-between;
+    
+    margin-bottom: 0 !important;
+    border: 1px solid #ddd;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    background: #fff;
+    float: none !important;
+  }
+
+  /* 3. ESTILOS VISUALES BARRA DE SCROLL (Opcional, para Chrome/Edge/Safari) */
+  .plans-content::-webkit-scrollbar {
+    height: 10px; /* Grosor de la barra */
+  }
+  .plans-content::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+    border-radius: 5px;
+  }
+  .plans-content::-webkit-scrollbar-thumb {
+    background: #ccc; /* Color de la barra */
+    border-radius: 5px;
+    border: 2px solid #f1f1f1; /* Borde para separarla */
+  }
+  .plans-content::-webkit-scrollbar-thumb:hover {
+    background: #999; 
+  }
+
+  /* 4. LIMPIEZA INTERNA (Igual que antes) */
+  .plan-preview .pull-left,
+  .plan-preview .pull-right {
+    float: none !important;
+    width: 100% !important;
+    text-align: center !important;
+    display: block !important;
+  }
   
-  /* Suavizado del scroll */
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch; 
-}
-
-/* 2. CADA TARJETA (HIJO) */
-.list-group-item.plan-preview {
-  /* CRÍTICO: Usamos 'flex: 0 0 ANCHO' para que NO se encojan ni crezcan */
-  flex: 0 0 280px !important;     /* Ancho fijo de 280px por tarjeta */
-  width: 280px !important;        
-  
-  display: flex !important;
-  flex-direction: column !important; /* Contenido interno vertical */
-  justify-content: space-between;
-  
-  margin-bottom: 0 !important;
-  border: 1px solid #ddd;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  background: #fff;
-  float: none !important;
-}
-
-/* 3. LIMPIEZA INTERNA (Evitar desorden por pull-left/right) */
-.plan-preview .pull-left,
-.plan-preview .pull-right {
-  float: none !important;
-  width: 100% !important;
-  text-align: center !important;
-  display: block !important;
-}
-
-.plan-preview h4 { 
-  margin-top: 10px; 
-  font-weight: bold; 
-  color: #0088ce; 
-}
-
-.plan-preview button { 
-  width: 100%; 
-  margin-top: 15px; 
-}
-
-/* 4. ESTILIZAR LA BARRA DE SCROLL (Opcional, para que se vea bonita) */
-.plans-content::-webkit-scrollbar {
-  height: 8px; /* Altura de la barra */
-}
-.plans-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-.plans-content::-webkit-scrollbar-thumb {
-  background: #ccc; 
-  border-radius: 4px;
-}
-.plans-content::-webkit-scrollbar-thumb:hover {
-  background: #aaa; 
-}
+  .plan-preview h4 { margin-top: 10px; font-weight: bold; color: #0088ce; }
+  .plan-preview button { width: 100%; margin-top: 15px; }
 </style>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
