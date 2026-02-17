@@ -593,67 +593,80 @@ curl -X POST API_ENDPOINT_URL \
     border-radius: 6px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   }
-  /* 1. EL CONTENEDOR (PADRE) - Habilita el scroll */
+  /* =======================================================
+     1. EL CONTENEDOR (plans-content)
+     Este es el que tendrá la barra de desplazamiento.
+     ======================================================= */
   .plans-content {
+    /* Flexbox para alinear horizontalmente */
     display: flex !important;
     flex-direction: row !important;
     
-    /* ESTAS DOS LÍNEAS SON LA CLAVE DEL SCROLL: */
-    flex-wrap: nowrap !important;   /* Prohibido bajar de línea. Obliga a una sola fila infinita. */
-    overflow-x: auto !important;    /* Si no caben, muestra barra de scroll horizontal */
-    overflow-y: hidden;             /* Oculta scroll vertical */
+    /* ESTO ES LO QUE HACE LA MAGIA DEL SCROLL: */
+    flex-wrap: nowrap !important;   /* Prohibido bajar a la siguiente línea */
+    overflow-x: auto !important;    /* Si se salen, mostrar barra de scroll */
+    overflow-y: hidden;             /* Ocultar scroll vertical */
     
-    gap: 20px;                      /* Espacio entre tarjetas */
-    padding: 10px 5px 20px 5px;     /* Padding abajo para que la barra de scroll no tape el contenido */
-    width: 100%;                    /* Asegura que use todo el ancho disponible */
-    
-    /* Suavizado del scroll para móviles/tablets */
-    -webkit-overflow-scrolling: touch; 
+    /* Espaciado y dimensiones */
+    gap: 15px;                      /* Espacio entre tarjetas */
+    width: 100%;                    /* Ocupar todo el ancho del modal */
+    padding: 5px 5px 20px 5px;      /* Padding abajo para la barra de scroll */
+    border: none;                   /* Quitar bordes por defecto de bootstrap */
+    margin-bottom: 0px;
+
+    /* Suavizado para móviles (iOS) */
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* 2. CADA TARJETA (HIJO) - Mantiene su ancho fijo */
+  /* =======================================================
+     2. LAS TARJETAS (plan-preview)
+     Deben tener un ancho fijo y NO encogerse.
+     ======================================================= */
   .list-group-item.plan-preview {
-    
-    /* CRÍTICO: "0 0 280px" significa:
-       - 0: No crecer
-       - 0: NO ENCOGER (Esto evita que se aplasten)
-       - 280px: Ancho base
+    /* flex: 0 0 250px 
+       0 -> flex-grow: No estirarse más de 250px
+       0 -> flex-shrink: NO ENCOGERSE (Vital para que no se aplasten)
+       250px -> flex-basis: El ancho base
     */
-    flex: 0 0 280px !important;     
-    width: 280px !important;        
-    max-width: 280px !important;
-    
-    /* Estilos estéticos de la tarjeta */
+    flex: 0 0 250px !important;     
+    width: 250px !important;
+    max-width: 250px !important;
+
+    /* Estilos visuales de la tarjeta */
     display: flex !important;
-    flex-direction: column !important; 
-    justify-content: space-between;
+    flex-direction: column !important;
+    justify-content: space-between; /* Título arriba, botón abajo */
     
     margin-bottom: 0 !important;
+    background: #fff;
     border: 1px solid #ddd;
     border-radius: 8px !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    background: #fff;
-    float: none !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    float: none !important; /* Anular floats de bootstrap */
   }
 
-  /* 3. ESTILOS VISUALES BARRA DE SCROLL (Opcional, para Chrome/Edge/Safari) */
+  /* =======================================================
+     3. ESTILOS DE LA BARRA DE SCROLL (Opcional)
+     Para que se vea moderna y no la gris por defecto.
+     ======================================================= */
   .plans-content::-webkit-scrollbar {
-    height: 10px; /* Grosor de la barra */
+    height: 8px;              /* Altura de la barra horizontal */
   }
   .plans-content::-webkit-scrollbar-track {
-    background: #f1f1f1; 
-    border-radius: 5px;
+    background: #f1f1f1;      /* Color del fondo del riel */
+    border-radius: 4px;
   }
   .plans-content::-webkit-scrollbar-thumb {
-    background: #ccc; /* Color de la barra */
-    border-radius: 5px;
-    border: 2px solid #f1f1f1; /* Borde para separarla */
+    background: #ccc;         /* Color de la barra */
+    border-radius: 4px;
   }
   .plans-content::-webkit-scrollbar-thumb:hover {
-    background: #999; 
+    background: #999;         /* Color al pasar el mouse */
   }
 
-  /* 4. LIMPIEZA INTERNA (Igual que antes) */
+  /* =======================================================
+     4. LIMPIEZA INTERNA (Bootstrap Overrides)
+     ======================================================= */
   .plan-preview .pull-left,
   .plan-preview .pull-right {
     float: none !important;
@@ -661,9 +674,20 @@ curl -X POST API_ENDPOINT_URL \
     text-align: center !important;
     display: block !important;
   }
-  
-  .plan-preview h4 { margin-top: 10px; font-weight: bold; color: #0088ce; }
-  .plan-preview button { width: 100%; margin-top: 15px; }
+
+  .plan-preview h4 {
+    margin-top: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0088ce;
+    white-space: normal; /* Permitir que el título use 2 líneas si es largo */
+  }
+
+  .plan-preview button {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
 </style>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
